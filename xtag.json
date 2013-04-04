@@ -1,11 +1,13 @@
 {
 	"name": "Appbar",
 	"tagName": "x-appbar",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"author": "Arron Schaar",
-	"description": "",
+	"description": "The Application Bar provides the standard top header and navigation layout that is typical for Web Applications on mobile devices.",
 	"demo": "demo/index.html",
-	"categories": [],
+	"categories": [
+		"building-block"
+	],
 	"compatibility": {
 		"firefox": 5,
 		"chrome": 4,

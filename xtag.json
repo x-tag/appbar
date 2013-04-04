@@ -19,7 +19,13 @@
 		"attributes": {},
 		"events": {},
 		"methods": {},
-		"getters": {},
-		"setters": {}
+		"getters": {
+			"heading": "Gets the large header text.",
+			"subheading": "Gets the small subheader text"
+		},
+		"setters": {
+			"heading": "Sets the large header text.",
+			"subheading": "Sets the small subheader text"
+		}
 	}
 }

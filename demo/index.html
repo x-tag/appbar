@@ -11,10 +11,6 @@
   <script type="text/javascript" src="../src/appbar.js"></script>      
   <style>
 
-    x-appbar {
-      margin-bottom: 22px;      
-    }
-
     .simple {
       color: white;
       background-color: #ddd;      
@@ -22,8 +18,7 @@
       color: rgb(255, 255, 255);
     }
 
-    x-appbar.simple > *:before {
-      background-color: #bbb;
+    x-appbar.simple > *:before {      
       top: 3px;
       bottom: 3px;
     }
@@ -33,10 +28,14 @@
       background-color: orange;
     }
 
-    x-appbar.ffos > *:before {
-      background-color: #F2870C;
+    x-appbar.ffos > *:before {      
       top: 3px;
       bottom: 3px;
+    }
+    #mobile-device {
+      height: 480px; 
+      width: 320px;
+      border: solid 1px black;
     }
     
   </style>
@@ -44,28 +43,33 @@
 
 <body>
 
-  <h2>Create a Demo</h2>
-
+<br />
   <x-appbar>
-    <x-action>=</x-action>
+    <div>=</div>
     <header>Default Styles</header>
-    <x-action>+</x-action>
-    <button>?</button>
+    <div>+</div>
+    <div>?</div>
   </x-appbar>
+
+<br />
 
   <x-appbar class="simple">
     <x-action>=</x-action>
     <header>Simple Styles</header>
     <x-action>+</x-action>
-  </x-appbar>
-
-  <x-appbar class="simple ffos" subheading="adfa">
-    <x-action>=</x-action>
-    <header>Firefox OS</header>
-    <x-action>+</x-action>
     <x-action>-</x-action>
     <x-action>?</x-action>
   </x-appbar>
+
+<br />
+
+  <div id="mobile-device">
+    <x-appbar class="simple ffos" subheading="(2)">
+      <x-action>=</x-action>
+      <header>Messages</header>
+      <x-action>+</x-action>      
+    </x-appbar>
+  </div>
 
 </body>
 

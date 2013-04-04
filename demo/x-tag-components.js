@@ -1,3 +1,4 @@
+
 if (!(document.register || {}).__polyfill__){
 
   (function(){
@@ -109,7 +110,7 @@ if (!(document.register || {}).__polyfill__){
               var index = element.attributes.length;
               while (index--) {
                 var attr = element.attributes[index];
-                upgraded.setAttribute(attr.name, attr.value);
+                _setAttribute.call(upgraded, attr.name, attr.value);
               }
               return upgraded;
             });
@@ -542,6 +543,15 @@ if (!(document.register || {}).__polyfill__){
         element.style[duration] = '';
       });
     },
+    
+    requestFrame: (function(){
+      var raf = win.requestAnimationFrame ||
+        win[prefix.lowercase + 'RequestAnimationFrame'] ||
+        function(fn){ return win.setTimeout(fn, 20) };
+      return function(fn){ 
+        return raf.call(win, fn);
+      }
+    })(),
 
     matchSelector: function (element, selector) {
       return matchSelector.call(element, selector);

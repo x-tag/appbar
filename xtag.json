@@ -1,8 +1,8 @@
 {
-	"name": "stub",
-	"tagName": "x-stub",
+	"name": "Appbar",
+	"tagName": "x-appbar",
 	"version": "0.1.0",
-	"author": "you",
+	"author": "Arron Schaar",
 	"description": "",
 	"demo": "demo/index.html",
 	"categories": [],

@@ -2,23 +2,75 @@
 <html lang="en">
 
 <head>
-    <meta charset="utf-8" />
-    <title>Stub Demo - X-Tag</title>
-    <link rel="stylesheet" type="text/css" href="x-tag-components.css"/>
-	<link rel="stylesheet" type="text/css" href="../src/main.css"/>
+  <meta charset="utf-8" />
+  <title>App Bar Demo - X-Tag</title>
+  <link rel="stylesheet" type="text/css" href="x-tag-components.css"/>
+  <link rel="stylesheet" type="text/css" href="../src/appbar.css"/>
 
-    <script type="text/javascript" src="x-tag-components.js"></script> 
-    <script type="text/javascript" src="../src/main.js"></script>      
-	<style>
+  <script type="text/javascript" src="x-tag-components.js"></script> 
+  <script type="text/javascript" src="../src/appbar.js"></script>      
+  <style>
 
-	</style>
+    x-appbar {
+      margin-bottom: 22px;      
+    }
+
+    .simple {
+      color: white;
+      background-color: #ddd;      
+      font: 2.5rem/3.8rem "MozTT",Sans-serif;
+      color: rgb(255, 255, 255);
+    }
+
+    x-appbar.simple > *:before {
+      background-color: #bbb;
+      top: 3px;
+      bottom: 3px;
+    }
+
+    .ffos {
+      color: white;
+      background-color: orange;
+    }
+
+    x-appbar.ffos > *:before {
+      background-color: #F2870C;
+      top: 3px;
+      bottom: 3px;
+    }
+    
+  </style>
 </head>
 
 <body>
 
-	<h2>Create a Demo</h2>
+  <h2>Create a Demo</h2>
 
+  <x-appbar>
+    <x-action>=</x-action>
+    <header>Default Styles</header>
+    <x-action>+</x-action>
+    <button>?</button>
+  </x-appbar>
+
+  <x-appbar class="simple">
+    <x-action>=</x-action>
+    <header>Simple Styles</header>
+    <x-action>+</x-action>
+  </x-appbar>
+
+  <x-appbar class="simple ffos" subheading="adfa">
+    <x-action>=</x-action>
+    <header>Firefox OS</header>
+    <x-action>+</x-action>
+    <x-action>-</x-action>
+    <x-action>?</x-action>
+  </x-appbar>
 
 </body>
+
+<script type="text/javascript">
+
+</script>
 
 </html>

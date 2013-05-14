@@ -13,16 +13,12 @@ x-appbar {
 }
 
 x-appbar > * {
-  -webkit-box-flex: 0;
-  -moz-box-flex: 0;
-  -webkit-flex: 0;
-  -ms-flex: 0;
-  flex: 0;
   vertical-align: center;
   position: relative;
   display: inline-block;
   background: none;
   border: none;
+  padding: 2px 5px 0;
 }
 
 x-appbar > *:first-child:before {
@@ -35,7 +31,6 @@ x-appbar > header {
   -webkit-flex: 1;
   -ms-flex: 1;
   flex: 1;
-  overflow: hidden;
 }
 
 x-appbar > header:after {

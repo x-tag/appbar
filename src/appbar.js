@@ -6,7 +6,7 @@
         var header = xtag.queryChildren(this, 'header')[0];
         if (!header){
           header = document.createElement('header');
-          this.appendChild(growbox);
+          this.appendChild(header);
         }
         this.xtag.data.header = header;
         this.subheading = this.subheading;

@@ -6,8 +6,7 @@ x-appbar {
   font-family: $COMPONENT_UI_FONT_FAMILY;
   color: $COMPONENT_UI_TEXT_COLOR;
   font-size: $COMPONENT_UI_HEADER_FONT_SIZE;
-  padding-top: $COMPONENT_UI_LINE_PADDING;
-  padding-bottom: $COMPONENT_UI_LINE_PADDING;
+  padding: 0;
 
   width: 100%;
   display: -webkit-box;

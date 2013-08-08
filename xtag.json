@@ -23,11 +23,11 @@
 		"methods": {},
 		"getters": {
 			"heading": "Gets the large header text.",
-			"subheading": "Gets the small subheader text"
+			"subheading": "Gets the small optional subheader text."
 		},
 		"setters": {
 			"heading": "Sets the large header text.",
-			"subheading": "Sets the small subheader text"
+			"subheading": "Sets the small optional subheader text"
 		}
 	}
 }

@@ -14,6 +14,7 @@
     },
     accessors: {
       heading: {
+        attribute: {},
         get: function(){
           return this.xtag.data.header.innerHTML;
         },

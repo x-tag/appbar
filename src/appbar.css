@@ -13,8 +13,8 @@ x-appbar {
   padding: 0;
   width: 100%;
   display: -webkit-box;
-  display: -ms-flexbox;
   display: -moz-box;
+  display: -ms-flexbox;
   display: -webkit-flex;
   display: flex;
   -webkit-box-sizing: border-box;
@@ -35,17 +35,20 @@ x-appbar > *:first-child:before {
   display: none; }
 
 x-appbar > header {
+  min-width: auto;
+  min-height: auto;
   -webkit-box-flex: 1;
   -moz-box-flex: 1;
   -webkit-flex: 1;
   -ms-flex: 1;
+  box-flex: 1;
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis; }
 
 x-appbar > header:after {
   padding-left: 6px;
-  font-size: 50%;
+  font-size: 60%;
   content: attr(subheading); }
 
 /* Spacer style */

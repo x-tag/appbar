@@ -1,4 +1,43 @@
 x-appbar {
+  padding: 0;
+  width: 100%;
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+x-appbar > * {
+  position: relative;
+  display: inline-block;
+  border: none;
+  padding: 2px 5px 0;
+  vertical-align: middle;
+  text-align: center;
+  background: none;
+}
+x-appbar > *:first-child:before {
+  display: none;
+}
+x-appbar > header {
+  min-width: auto;
+  min-height: auto;
+  -webkit-box-flex: 1;
+  -moz-box-flex: 1;
+  -webkit-flex: 1;
+  -ms-flex: 1;
+  box-flex: 1;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+x-appbar > header:after {
+  content: attr(subheading);
+}
+x-appbar {
   background-color: #a0a0a0;
   background-repeat: no-repeat;
   background-position: 0 0;
@@ -10,54 +49,17 @@ x-appbar {
   font-family: "_OpenSansBrick", "Segoe UI", Frutiger, "Frutiger Linotype", "Dejavu Sans", "Helvetica Neue", Arial, sans-serif;
   color: #d4d4d4;
   font-size: 20px;
-  padding: 0;
-  width: 100%;
-  display: -webkit-box;
-  display: -moz-box;
-  display: -ms-flexbox;
-  display: -webkit-flex;
-  display: flex;
-  -webkit-box-sizing: border-box;
-  -moz-box-sizing: border-box;
-  -ms-box-sizing: border-box;
-  -o-box-sizing: border-box;
-  box-sizing: border-box; }
-
-x-appbar > * {
-  position: relative;
-  display: inline-block;
-  border: none;
-  padding: 2px 5px 0;
-  vertical-align: middle;
-  text-align: center;
-  background: none; }
-
-x-appbar > *:first-child:before {
-  display: none; }
-
-x-appbar > header {
-  min-width: auto;
-  min-height: auto;
-  -webkit-box-flex: 1;
-  -moz-box-flex: 1;
-  -webkit-flex: 1;
-  -ms-flex: 1;
-  box-flex: 1;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis; }
-
+}
 x-appbar > header:after {
   padding-left: 6px;
   font-size: 60%;
-  content: attr(subheading); }
-
-/* Spacer style */
+}
 x-appbar > *:before {
-  background-color: rgba(255, 255, 255, 0.25);
+  background-color: rgba(255,255,255,0.25);
   width: 2px;
   top: 0px;
   bottom: 0px;
   content: " ";
   position: absolute;
-  left: 0px; }
+  left: 0px;
+}

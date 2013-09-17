@@ -5,29 +5,23 @@
   <meta charset="utf-8" />
   <title>App Bar Demo - X-Tag</title>
 
-  <!-- use these imports instead of the Brick files if running from submodule
-       repository instead of the Brick repository -->
-  <!--
   <link rel="stylesheet" type="text/css" href="x-tag-components.css"/>
   <link rel="stylesheet" type="text/css" href="../src/appbar.css"/>
 
-  <script type="text/javascript" src="x-tag-components.js"></script> 
-  <script type="text/javascript" src="../src/appbar.js"></script>      
-  -->
-  <link rel="stylesheet" type="text/css" href="../../../dist/brick.css"/>
-  <script type="text/javascript" src="../../../dist/brick.js"></script>
+  <script type="text/javascript" src="x-tag-components.js"></script>
+  <script type="text/javascript" src="../src/appbar.js"></script>
 
   <style>
 
     .simple {
       color: white;
       background-color: #ddd;
-      background-image: none;  
+      background-image: none;
       font-size: 2.5rem;
       color: rgb(255, 255, 255);
     }
 
-    x-appbar.simple > *:before {      
+    x-appbar.simple > *:before {
       top: 3px;
       bottom: 3px;
     }
@@ -38,7 +32,7 @@
       background-color: orange;
     }
 
-    x-appbar.ffos > *:before {      
+    x-appbar.ffos > *:before {
       top: 3px;
       bottom: 3px;
     }
@@ -46,12 +40,12 @@
       box-shadow: 0 2px 0px 0 rgba(0,0,0,0.3);
     }
     #mobile-device {
-      height: 200px; 
+      height: 200px;
       width: 320px;
       border: solid 1px black;
       background-color: #888;
     }
-    
+
   </style>
 </head>
 
@@ -81,11 +75,11 @@
     <x-appbar class="simple ffos" subheading="(2)">
       <x-action>=</x-action>
       <header>Messages</header>
-      <x-action>+</x-action>      
+      <x-action>+</x-action>
     </x-appbar>
     <ul>
       <li>Message 1</li>
-      <li>Message 2</li>      
+      <li>Message 2</li>
     <ul>
   </div>
 

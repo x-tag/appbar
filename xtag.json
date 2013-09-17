@@ -1,7 +1,7 @@
 {
 	"name": "Appbar",
 	"tagName": "x-appbar",
-	"version": "0.2.1",
+	"version": "0.2.2",
 	"author": "Arron Schaar",
 	"description": "An x-appbar is a simple component emulating the standard layout of a header seen at the top of a mobile application.",
 	"demo": "demo/index.html",
@@ -20,7 +20,7 @@
 		"description": "",
 		"attributes": {
 			"heading": "Edits the large header text.",
-			"subheading": "Edits the small optional subheader text."	
+			"subheading": "Edits the small optional subheader text."
 		},
 		"events": {},
 		"methods": {},

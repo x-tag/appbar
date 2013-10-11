@@ -1,2 +1,36 @@
-@import 'scaffold'
-@import 'skin'
+@import 'mixins'
+@import 'params'
+
+x-appbar {
+  padding: 0;
+  width: 100%;
+  flexbox();
+  box-sizing(border-box);
+}
+
+x-appbar > * {
+  position: relative;
+  display: inline-block;
+
+  border: none;
+  padding: 2px 5px 0;
+
+  vertical-align: middle;
+  text-align:center;
+
+  background: none;
+}
+
+x-appbar > *:first-child:before {
+  display: none;
+}
+
+x-appbar > header {
+  flex(1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+x-appbar > header:after {
+  content: attr(subheading);
+}

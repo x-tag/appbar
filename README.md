@@ -8,7 +8,7 @@ The Application Bar provides the standard top header and navigation layout that 
 ```html
 <x-appbar subheading="(2)">
   <div>=</div>
-  <header>Email</header>
+  <h2>Email</h2>
   <div>+</div>
   <div>?</div>
 </x-appbar>

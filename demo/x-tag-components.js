@@ -91,6 +91,43 @@ defineElementGetter(Element.prototype, 'classList', function () {
 
 /*
  * Copyright 2012 The Polymer Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file.
+ */
+
+if (typeof WeakMap === 'undefined') {
+  (function() {
+    var defineProperty = Object.defineProperty;
+    var counter = Date.now() % 1e9;
+
+    var WeakMap = function() {
+      this.name = '__st' + (Math.random() * 1e9 >>> 0) + (counter++ + '__');
+    };
+
+    WeakMap.prototype = {
+      set: function(key, value) {
+        var entry = key[this.name];
+        if (entry && entry[0] === key)
+          entry[1] = value;
+        else
+          defineProperty(key, this.name, {value: [key, value], writable: true});
+      },
+      get: function(key) {
+        var entry;
+        return (entry = key[this.name]) && entry[0] === key ?
+            entry[1] : undefined;
+      },
+      delete: function(key) {
+        this.set(key, undefined);
+      }
+    };
+
+    window.WeakMap = WeakMap;
+  })();
+}
+
+/*
+ * Copyright 2012 The Polymer Authors. All rights reserved.
  * Use of this source code is goverened by a BSD-style
  * license that can be found in the LICENSE file.
  */
@@ -1395,599 +1432,6 @@ scope.takeRecords = takeRecords;
  * license that can be found in the LICENSE file.
  */
 
-(function(scope) {
-
-if (!scope) {
-  scope = window.HTMLImports = {flags:{}};
-}
-
-// imports
-
-var xhr = scope.xhr;
-
-// importer
-
-var IMPORT_LINK_TYPE = 'import';
-var STYLE_LINK_TYPE = 'stylesheet';
-
-// highlander object represents a primary document (the argument to 'load')
-// at the root of a tree of documents
-
-// for any document, importer:
-// - loads any linked documents (with deduping), modifies paths and feeds them back into importer
-// - loads text of external script tags
-// - loads text of external style tags inside of <element>, modifies paths
-
-// when importer 'modifies paths' in a document, this includes
-// - href/src/action in node attributes
-// - paths in inline stylesheets
-// - all content inside templates
-
-// linked style sheets in an import have their own path fixed up when their containing import modifies paths
-// linked style sheets in an <element> are loaded, and the content gets path fixups
-// inline style sheets get path fixups when their containing import modifies paths
-
-var loader;
-
-var importer = {
-  documents: {},
-  cache: {},
-  preloadSelectors: [
-    'link[rel=' + IMPORT_LINK_TYPE + ']',
-    'element link[rel=' + STYLE_LINK_TYPE + ']',
-    'template',
-    'script[src]:not([type])',
-    'script[src][type="text/javascript"]'
-  ].join(','),
-  loader: function(next) {
-    // construct a loader instance
-    loader = new Loader(importer.loaded, next);
-    // alias the loader cache (for debugging)
-    loader.cache = importer.cache;
-    return loader;
-  },
-  load: function(doc, next) {
-    // construct a loader instance
-    loader = importer.loader(next);
-    // add nodes from document into loader queue
-    importer.preload(doc);
-  },
-  preload: function(doc) {
-    // all preloadable nodes in inDocument
-    var nodes = doc.querySelectorAll(importer.preloadSelectors);
-    // from the main document, only load imports
-    // TODO(sjmiles): do this by altering the selector list instead
-    nodes = this.filterMainDocumentNodes(doc, nodes);
-    // extra link nodes from templates, filter templates out of the nodes list
-    nodes = this.extractTemplateNodes(nodes);
-    // add these nodes to loader's queue
-    loader.addNodes(nodes);
-  },
-  filterMainDocumentNodes: function(doc, nodes) {
-    if (doc === document) {
-      nodes = Array.prototype.filter.call(nodes, function(n) {
-        return !isScript(n);
-      });
-    }
-    return nodes;
-  },
-  extractTemplateNodes: function(nodes) {
-    var extra = [];
-    nodes = Array.prototype.filter.call(nodes, function(n) {
-      if (n.localName === 'template') {
-        if (n.content) {
-          var l$ = n.content.querySelectorAll('link[rel=' + STYLE_LINK_TYPE +
-            ']');
-          if (l$.length) {
-            extra = extra.concat(Array.prototype.slice.call(l$, 0));
-          }
-        }
-        return false;
-      }
-      return true;
-    });
-    if (extra.length) {
-      nodes = nodes.concat(extra);
-    }
-    return nodes;
-  },
-  loaded: function(url, elt, resource) {
-    if (isDocumentLink(elt)) {
-      var document = importer.documents[url];
-      // if we've never seen a document at this url
-      if (!document) {
-        // generate an HTMLDocument from data
-        document = makeDocument(resource, url);
-        // resolve resource paths relative to host document
-        path.resolvePathsInHTML(document);
-        // cache document
-        importer.documents[url] = document;
-        // add nodes from this document to the loader queue
-        importer.preload(document);
-      }
-      // store import record
-      elt.import = {
-        href: url,
-        ownerNode: elt,
-        content: document
-      };
-      // store document resource
-      elt.content = resource = document;
-    }
-    // store generic resource
-    // TODO(sorvell): fails for nodes inside <template>.content
-    // see https://code.google.com/p/chromium/issues/detail?id=249381.
-    elt.__resource = resource;
-    // css path fixups
-    if (isStylesheetLink(elt)) {
-      path.resolvePathsInStylesheet(elt);
-    }
-  }
-};
-
-function isDocumentLink(elt) {
-  return isLinkRel(elt, IMPORT_LINK_TYPE);
-}
-
-function isStylesheetLink(elt) {
-  return isLinkRel(elt, STYLE_LINK_TYPE);
-}
-
-function isLinkRel(elt, rel) {
-  return elt.localName === 'link' && elt.getAttribute('rel') === rel;
-}
-
-function isScript(elt) {
-  return elt.localName === 'script';
-}
-
-function makeDocument(resource, url) {
-  // create a new HTML document
-  var doc = resource;
-  if (!(doc instanceof Document)) {
-    doc = document.implementation.createHTMLDocument(IMPORT_LINK_TYPE);
-    // install html
-    doc.body.innerHTML = resource;
-  }
-  // cache the new document's source url
-  doc._URL = url;
-  // establish a relative path via <base>
-  var base = doc.createElement('base');
-  base.setAttribute('href', document.baseURI || document.URL);
-  doc.head.appendChild(base);
-  // TODO(sorvell): ideally this code is not aware of Template polyfill,
-  // but for now the polyfill needs help to bootstrap these templates
-  if (window.HTMLTemplateElement && HTMLTemplateElement.bootstrap) {
-    HTMLTemplateElement.bootstrap(doc);
-  }
-  return doc;
-}
-
-var Loader = function(onLoad, onComplete) {
-  this.onload = onLoad;
-  this.oncomplete = onComplete;
-  this.inflight = 0;
-  this.pending = {};
-  this.cache = {};
-};
-
-Loader.prototype = {
-  addNodes: function(nodes) {
-    // number of transactions to complete
-    this.inflight += nodes.length;
-    // commence transactions
-    forEach(nodes, this.require, this);
-    // anything to do?
-    this.checkDone();
-  },
-  require: function(elt) {
-    var url = path.nodeUrl(elt);
-    // TODO(sjmiles): ad-hoc
-    elt.__nodeUrl = url;
-    // deduplication
-    if (!this.dedupe(url, elt)) {
-      // fetch this resource
-      this.fetch(url, elt);
-    }
-  },
-  dedupe: function(url, elt) {
-    if (this.pending[url]) {
-      // add to list of nodes waiting for inUrl
-      this.pending[url].push(elt);
-      // don't need fetch
-      return true;
-    }
-    if (this.cache[url]) {
-      // complete load using cache data
-      this.onload(url, elt, loader.cache[url]);
-      // finished this transaction
-      this.tail();
-      // don't need fetch
-      return true;
-    }
-    // first node waiting for inUrl
-    this.pending[url] = [elt];
-    // need fetch (not a dupe)
-    return false;
-  },
-  fetch: function(url, elt) {
-    var receiveXhr = function(err, resource) {
-      this.receive(url, elt, err, resource);
-    }.bind(this);
-    xhr.load(url, receiveXhr);
-    // TODO(sorvell): blocked on
-    // https://code.google.com/p/chromium/issues/detail?id=257221
-    // xhr'ing for a document makes scripts in imports runnable; otherwise
-    // they are not; however, it requires that we have doctype=html in
-    // the import which is unacceptable. This is only needed on Chrome
-    // to avoid the bug above.
-    /*
-    if (isDocumentLink(elt)) {
-      xhr.loadDocument(url, receiveXhr);
-    } else {
-      xhr.load(url, receiveXhr);
-    }
-    */
-  },
-  receive: function(url, elt, err, resource) {
-    if (!err) {
-      loader.cache[url] = resource;
-    }
-    loader.pending[url].forEach(function(e) {
-      if (!err) {
-        this.onload(url, e, resource);
-      }
-      this.tail();
-    }, this);
-    loader.pending[url] = null;
-  },
-  tail: function() {
-    --this.inflight;
-    this.checkDone();
-  },
-  checkDone: function() {
-    if (!this.inflight) {
-      this.oncomplete();
-    }
-  }
-};
-
-var URL_ATTRS = ['href', 'src', 'action'];
-var URL_ATTRS_SELECTOR = '[' + URL_ATTRS.join('],[') + ']';
-var URL_TEMPLATE_SEARCH = '{{.*}}';
-
-var path = {
-  nodeUrl: function(node) {
-    return path.resolveUrl(path.documentURL, path.hrefOrSrc(node));
-  },
-  hrefOrSrc: function(node) {
-    return node.getAttribute("href") || node.getAttribute("src");
-  },
-  documentUrlFromNode: function(node) {
-    return path.getDocumentUrl(node.ownerDocument || node);
-  },
-  getDocumentUrl: function(doc) {
-    var url = doc &&
-        // TODO(sjmiles): ShadowDOMPolyfill intrusion
-        (doc._URL || (doc.impl && doc.impl._URL)
-            || doc.baseURI || doc.URL)
-                || '';
-    // take only the left side if there is a #
-    return url.split('#')[0];
-  },
-  resolveUrl: function(baseUrl, url) {
-    if (this.isAbsUrl(url)) {
-      return url;
-    }
-    return this.compressUrl(this.urlToPath(baseUrl) + url);
-  },
-  resolveRelativeUrl: function(baseUrl, url) {
-    if (this.isAbsUrl(url)) {
-      return url;
-    }
-    return this.makeDocumentRelPath(this.resolveUrl(baseUrl, url));
-  },
-  isAbsUrl: function(url) {
-    return /(^data:)|(^http[s]?:)|(^\/)/.test(url);
-  },
-  urlToPath: function(baseUrl) {
-    var parts = baseUrl.split("/");
-    parts.pop();
-    parts.push('');
-    return parts.join("/");
-  },
-  compressUrl: function(url) {
-    var search = '';
-    var searchPos = url.indexOf('?');
-    // query string is not part of the path
-    if (searchPos > -1) {
-      search = url.substring(searchPos);
-      url = url.substring(searchPos, 0);
-    }
-    var parts = url.split('/');
-    for (var i=0, p; i<parts.length; i++) {
-      p = parts[i];
-      if (p === '..') {
-        parts.splice(i-1, 2);
-        i -= 2;
-      }
-    }
-    return parts.join('/') + search;
-  },
-  makeDocumentRelPath: function(url) {
-    // test url against document to see if we can construct a relative path
-    path.urlElt.href = url;
-    // IE does not set host if same as document
-    if (!path.urlElt.host || 
-        (path.urlElt.host === window.location.host &&
-        path.urlElt.protocol === window.location.protocol)) {
-      return this.makeRelPath(path.documentURL, path.urlElt.href);
-    } else {
-      return url;
-    }
-  },
-  // make a relative path from source to target
-  makeRelPath: function(source, target) {
-    var s = source.split('/');
-    var t = target.split('/');
-    while (s.length && s[0] === t[0]){
-      s.shift();
-      t.shift();
-    }
-    for(var i = 0, l = s.length-1; i < l; i++) {
-      t.unshift('..');
-    }
-    var r = t.join('/');
-    return r;
-  },
-  resolvePathsInHTML: function(root, url) {
-    url = url || path.documentUrlFromNode(root)
-    path.resolveAttributes(root, url);
-    path.resolveStyleElts(root, url);
-    // handle template.content
-    var templates = root.querySelectorAll('template');
-    if (templates) {
-      forEach(templates, function(t) {
-        if (t.content) {
-          path.resolvePathsInHTML(t.content, url);
-        }
-      });
-    }
-  },
-  resolvePathsInStylesheet: function(sheet) {
-    var docUrl = path.nodeUrl(sheet);
-    sheet.__resource = path.resolveCssText(sheet.__resource, docUrl);
-  },
-  resolveStyleElts: function(root, url) {
-    var styles = root.querySelectorAll('style');
-    if (styles) {
-      forEach(styles, function(style) {
-        style.textContent = path.resolveCssText(style.textContent, url);
-      });
-    }
-  },
-  resolveCssText: function(cssText, baseUrl) {
-    return cssText.replace(/url\([^)]*\)/g, function(match) {
-      // find the url path, ignore quotes in url string
-      var urlPath = match.replace(/["']/g, "").slice(4, -1);
-      urlPath = path.resolveRelativeUrl(baseUrl, urlPath);
-      return "url(" + urlPath + ")";
-    });
-  },
-  resolveAttributes: function(root, url) {
-    // search for attributes that host urls
-    var nodes = root && root.querySelectorAll(URL_ATTRS_SELECTOR);
-    if (nodes) {
-      forEach(nodes, function(n) {
-        this.resolveNodeAttributes(n, url);
-      }, this);
-    }
-  },
-  resolveNodeAttributes: function(node, url) {
-    URL_ATTRS.forEach(function(v) {
-      var attr = node.attributes[v];
-      if (attr && attr.value &&
-         (attr.value.search(URL_TEMPLATE_SEARCH) < 0)) {
-        var urlPath = path.resolveRelativeUrl(url, attr.value);
-        attr.value = urlPath;
-      }
-    });
-  }
-};
-
-path.documentURL = path.getDocumentUrl(document);
-path.urlElt = document.createElement('a');
-
-xhr = xhr || {
-  async: true,
-  ok: function(request) {
-    return (request.status >= 200 && request.status < 300)
-        || (request.status === 304)
-        || (request.status === 0);
-  },
-  load: function(url, next, nextContext) {
-    var request = new XMLHttpRequest();
-    if (scope.flags.debug || scope.flags.bust) {
-      url += '?' + Math.random();
-    }
-    request.open('GET', url, xhr.async);
-    request.addEventListener('readystatechange', function(e) {
-      if (request.readyState === 4) {
-        next.call(nextContext, !xhr.ok(request) && request,
-          request.response, url);
-      }
-    });
-    request.send();
-    return request;
-  },
-  loadDocument: function(url, next, nextContext) {
-    this.load(url, next, nextContext).responseType = 'document';
-  }
-};
-
-var forEach = Array.prototype.forEach.call.bind(Array.prototype.forEach);
-
-// exports
-
-scope.path = path;
-scope.xhr = xhr;
-scope.importer = importer;
-scope.getDocumentUrl = path.getDocumentUrl;
-scope.IMPORT_LINK_TYPE = IMPORT_LINK_TYPE;
-
-})(window.HTMLImports);
-
-/*
- * Copyright 2013 The Polymer Authors. All rights reserved.
- * Use of this source code is governed by a BSD-style
- * license that can be found in the LICENSE file.
- */
-
-(function(scope) {
-
-var IMPORT_LINK_TYPE = 'import';
-
-// highlander object for parsing a document tree
-
-var importParser = {
-  selectors: [
-    'link[rel=' + IMPORT_LINK_TYPE + ']',
-    'link[rel=stylesheet]',
-    'style',
-    'script:not([type])',
-    'script[type="text/javascript"]'
-  ],
-  map: {
-    link: 'parseLink',
-    script: 'parseScript',
-    style: 'parseGeneric'
-  },
-  parse: function(inDocument) {
-    if (!inDocument.__importParsed) {
-      // only parse once
-      inDocument.__importParsed = true;
-      // all parsable elements in inDocument (depth-first pre-order traversal)
-      var elts = inDocument.querySelectorAll(importParser.selectors);
-      // for each parsable node type, call the mapped parsing method
-      forEach(elts, function(e) {
-        importParser[importParser.map[e.localName]](e);
-      });
-    }
-  },
-  parseLink: function(linkElt) {
-    if (isDocumentLink(linkElt)) {
-      if (linkElt.content) {
-        importParser.parse(linkElt.content);
-      }
-    } else {
-      this.parseGeneric(linkElt);
-    }
-  },
-  parseGeneric: function(elt) {
-    if (needsMainDocumentContext(elt)) {
-      document.head.appendChild(elt);
-    }
-  },
-  parseScript: function(scriptElt) {
-    if (needsMainDocumentContext(scriptElt)) {
-      // acquire code to execute
-      var code = (scriptElt.__resource || scriptElt.textContent).trim();
-      if (code) {
-        // calculate source map hint
-        var moniker = scriptElt.__nodeUrl;
-        if (!moniker) {
-          var moniker = scope.path.documentUrlFromNode(scriptElt);
-          // there could be more than one script this url
-          var tag = '[' + Math.floor((Math.random()+1)*1000) + ']';
-          // TODO(sjmiles): Polymer hack, should be pluggable if we need to allow 
-          // this sort of thing
-          var matches = code.match(/Polymer\(['"]([^'"]*)/);
-          tag = matches && matches[1] || tag;
-          // tag the moniker
-          moniker += '/' + tag + '.js';
-        }
-        // source map hint
-        code += "\n//# sourceURL=" + moniker + "\n";
-        // evaluate the code
-        eval.call(window, code);
-      }
-    }
-  }
-};
-
-var forEach = Array.prototype.forEach.call.bind(Array.prototype.forEach);
-
-function isDocumentLink(elt) {
-  return elt.localName === 'link'
-      && elt.getAttribute('rel') === IMPORT_LINK_TYPE;
-}
-
-function needsMainDocumentContext(node) {
-  // nodes can be moved to the main document:
-  // if they are in a tree but not in the main document and not children of <element>
-  return node.parentNode && !inMainDocument(node) 
-      && !isElementElementChild(node);
-}
-
-function inMainDocument(elt) {
-  return elt.ownerDocument === document ||
-    // TODO(sjmiles): ShadowDOMPolyfill intrusion
-    elt.ownerDocument.impl === document;
-}
-
-function isElementElementChild(elt) {
-  return elt.parentNode && elt.parentNode.localName === 'element';
-}
-
-// exports
-
-scope.parser = importParser;
-
-})(HTMLImports);
-/*
- * Copyright 2013 The Polymer Authors. All rights reserved.
- * Use of this source code is governed by a BSD-style
- * license that can be found in the LICENSE file.
- */
-(function(){
-
-// bootstrap
-
-// IE shim for CustomEvent
-if (typeof window.CustomEvent !== 'function') {
-  window.CustomEvent = function(inType) {
-     var e = document.createEvent('HTMLEvents');
-     e.initEvent(inType, true, true);
-     return e;
-  };
-}
-
-function bootstrap() {
-  // preload document resource trees
-  HTMLImports.importer.load(document, function() {
-    HTMLImports.parser.parse(document);
-    HTMLImports.readyTime = new Date().getTime();
-    // send HTMLImportsLoaded when finished
-    document.dispatchEvent(
-      new CustomEvent('HTMLImportsLoaded', {bubbles: true})
-    );
-  });
-};
-
-if (document.readyState === 'complete') {
-  bootstrap();
-} else {
-  window.addEventListener('DOMContentLoaded', bootstrap);
-}
-
-})();
-
-/*
- * Copyright 2013 The Polymer Authors. All rights reserved.
- * Use of this source code is governed by a BSD-style
- * license that can be found in the LICENSE file.
- */
-
 (function() {
 
 // import
@@ -2164,6 +1608,7 @@ if (document.readyState === 'complete') {
   }
 
 // DOM
+
   var str = '';
   function query(element, selector){
     return (selector || str).length ? toArray(element.querySelectorAll(selector)) : [];
@@ -2195,25 +1640,46 @@ if (document.readyState === 'complete') {
     return source;
   }
 
-  function mergeMixin(type, mixin, option) {
-    var original = {};
-    for (var o in option) original[o.split(':')[0]] = true;
-    for (var x in mixin) if (!original[x.split(':')[0]]) option[x] = mixin[x];
+  function wrapMixin(tag, key, pseudo, value, original){
+    if (typeof original[key] != 'function') original[key] = value;
+    else {
+      original[key] = xtag.wrap(original[key], xtag.applyPseudos(pseudo, value, tag.pseudos));
+    }
+  }
+
+  var uniqueMixinCount = 0;
+  function mergeMixin(tag, mixin, original, mix) {
+    if (mix) {
+      var uniques = {};
+      for (var z in original) uniques[z.split(':')[0]] = z;
+      for (z in mixin) {
+        wrapMixin(tag, uniques[z.split(':')[0]] || z, z, mixin[z], original);
+      }
+    }
+    else {
+      for (var zz in mixin){
+        wrapMixin(tag, zz + ':__mixin__(' + (uniqueMixinCount++) + ')', zz, mixin[zz], original);
+      }
+    }
   }
 
   function applyMixins(tag) {
     tag.mixins.forEach(function (name) {
       var mixin = xtag.mixins[name];
       for (var type in mixin) {
-        switch (type) {
-          case 'lifecycle': case 'methods':
-            mergeMixin(type, mixin[type], tag[type]);
-            break;
-          case 'accessors': case 'prototype':
-            for (var z in mixin[type]) mergeMixin(z, mixin[type], tag.accessors);
-            break;
-          case 'events':
-            break;
+        var item = mixin[type],
+            original = tag[type];
+        if (!original) tag[type] = item;
+        else {
+          switch (type){
+            case 'accessors': case 'prototype':
+              for (var z in item) {
+                if (!original[z]) original[z] = item[z];
+                else mergeMixin(tag, item[z], original[z], true);
+              }
+              break;
+            default: mergeMixin(tag, item, original, type != 'events');
+          }
         }
       }
     });
@@ -2223,10 +1689,16 @@ if (document.readyState === 'complete') {
 // Events
 
   function delegateAction(pseudo, event) {
-    var target = query(this, pseudo.value).filter(function(node){
-      return node == event.target || node.contains ? node.contains(event.target) : null;
-    })[0];
-    return target ? pseudo.listener = pseudo.listener.bind(target) : null;
+    var match, target = event.target;
+    if (xtag.matchSelector(target, pseudo.value)) match = target;
+    else if (xtag.matchSelector(target, pseudo.value + ' *')) {
+      var parent = target.parentNode;
+      while (!match) {
+        if (xtag.matchSelector(parent, pseudo.value)) match = parent;
+        parent = parent.parentNode;
+      }
+    }
+    return match ? pseudo.listener = pseudo.listener.bind(match) : null;
   }
 
   function touchFilter(event) {
@@ -2351,6 +1823,15 @@ if (document.readyState === 'complete') {
     }
   }
 
+  var readyTags = {};
+  function fireReady(name){
+    readyTags[name] = (readyTags[name] || []).filter(function(obj){
+      return (obj.tags = obj.tags.filter(function(z){
+        return z != name && !xtag.tags[z];
+      })).length || obj.fn();
+    });
+  }
+
 /*** X-Tag Object Definition ***/
 
   var xtag = {
@@ -2415,7 +1896,7 @@ if (document.readyState === 'complete') {
       };
 
       if (tag.lifecycle.inserted) tag.prototype.enteredViewCallback = { value: tag.lifecycle.inserted, enumerable: true };
-      if (tag.lifecycle.removed) tag.prototype.leftDocumentCallback = { value: tag.lifecycle.removed, enumerable: true };
+      if (tag.lifecycle.removed) tag.prototype.leftViewCallback = { value: tag.lifecycle.removed, enumerable: true };
       if (tag.lifecycle.attributeChanged) tag.prototype.attributeChangedCallback = { value: tag.lifecycle.attributeChanged, enumerable: true };
 
       var setAttribute = tag.prototype.setAttribute || HTMLElement.prototype.setAttribute;
@@ -2456,11 +1937,10 @@ if (document.readyState === 'complete') {
       };
 
       var elementProto = basePrototype ?
-        basePrototype :
-          options['extends'] ?
-            Object.create(doc.createElement(options['extends'])
-              .constructor).prototype :
-          win.HTMLElement.prototype;
+            basePrototype :
+            options['extends'] ?
+            Object.create(doc.createElement(options['extends']).constructor).prototype :
+            win.HTMLElement.prototype;
 
       var definition = {
         'prototype': Object.create(elementProto, tag.prototype)
@@ -2468,18 +1948,24 @@ if (document.readyState === 'complete') {
       if (options['extends']) {
         definition['extends'] = options['extends'];
       }
-      return doc.register(_name, definition);
+      var reg = doc.register(_name, definition);
+      fireReady(_name);
+      return reg;
+    },
+
+    ready: function(names, fn){
+      var obj = { tags: toArray(names), fn: fn };
+      if (obj.tags.reduce(function(last, name){
+        if (xtag.tags[name]) return last;
+        (readyTags[name] = readyTags[name] || []).push(obj);
+      }, true)) fn();
     },
 
     /* Exposed Variables */
 
     mixins: {},
     prefix: prefix,
-    touches: {
-      active: [],
-      changed: []
-    },
-    captureEvents: ['focus', 'blur', 'scroll', 'underflow', 'overflow', 'overflowchanged'],
+    captureEvents: ['focus', 'blur', 'scroll', 'underflow', 'overflow', 'overflowchanged', 'DOMMouseScroll'],
     customEvents: {
       overflow: createFlowEvent('over'),
       underflow: createFlowEvent('under'),
@@ -2503,6 +1989,13 @@ if (document.readyState === 'complete') {
       leave: {
         attach: ['mouseout', 'touchleave'],
         condition: touchFilter
+      },
+      scrollwheel: {
+        attach: ['DOMMouseScroll', 'mousewheel'],
+        condition: function(event){
+          event.delta = event.wheelDelta ? event.wheelDelta / 40 : Math.round(event.detail / 3.5 * -1);
+          return true;
+        }
       },
       tapstart: {
         observe: {
@@ -2528,7 +2021,6 @@ if (document.readyState === 'complete') {
               custom.lastDrag = event;
               return (last.pageX != event.pageX && last.pageY != event.pageY) || null;
             case 'tapstart':
-              custom.touches = custom.touches || 1;
               if (!custom.move) {
                 custom.current = this;
                 custom.move = xtag.addEvents(this, {
@@ -2539,10 +2031,9 @@ if (document.readyState === 'complete') {
               }
               break;
             case 'tapend': case 'dragend': case 'touchcancel':
-              custom.touches--;
-              if (!custom.touches) {
-                xtag.removeEvents(custom.current , custom.move || {});
-                xtag.removeEvent(doc, custom.tapend || {});
+              if (!event.touches.length) {
+                if (custom.move) xtag.removeEvents(custom.current , custom.move || {});
+                if (custom.tapend) xtag.removeEvent(doc, custom.tapend || {});
                 delete custom.lastDrag;
                 delete custom.current;
                 delete custom.tapend;
@@ -2553,6 +2044,7 @@ if (document.readyState === 'complete') {
       }
     },
     pseudos: {
+      __mixin__: {},
       keypass: keypseudo,
       keyfail: keypseudo,
       delegate: { action: delegateAction },
@@ -2583,8 +2075,9 @@ if (document.readyState === 'complete') {
     wrap: function (original, fn) {
       return function(){
         var args = toArray(arguments),
-          returned = original.apply(this, args);
-        return returned === false ? false : fn.apply(this, typeof returned != 'undefined' ? toArray(returned) : args);
+            output = original.apply(this, args);
+        fn.apply(this, args);
+        return output;
       };
     },
 
@@ -2605,12 +2098,11 @@ if (document.readyState === 'complete') {
 
     query: query,
 
-    skipTransition: function(element, fn, bind){
+    skipTransition: function(element, fn){
       var prop = prefix.js + 'TransitionProperty';
       element.style[prop] = element.style.transitionProperty = 'none';
-      xtag.requestFrame(function(){
-        var callback;
-        if (fn) callback = fn.call(bind);
+      var callback = fn();
+      return xtag.requestFrame(function(){
         xtag.requestFrame(function(){
           element.style[prop] = element.style.transitionProperty = '';
           if (callback) xtag.requestFrame(callback);
@@ -2620,11 +2112,16 @@ if (document.readyState === 'complete') {
 
     requestFrame: (function(){
       var raf = win.requestAnimationFrame ||
-        win[prefix.lowercase + 'RequestAnimationFrame'] ||
-        function(fn){ return win.setTimeout(fn, 20); };
-      return function(fn){
-        return raf.call(win, fn);
-      };
+                win[prefix.lowercase + 'RequestAnimationFrame'] ||
+                function(fn){ return win.setTimeout(fn, 20); };
+      return function(fn){ return raf(fn); };
+    })(),
+
+    cancelFrame: (function(){
+      var cancel = win.cancelAnimationFrame ||
+                   win[prefix.lowercase + 'CancelAnimationFrame'] ||
+                   win.clearTimeout;
+      return function(id){ return cancel(id); };
     })(),
 
     matchSelector: function (element, selector) {
@@ -2699,7 +2196,7 @@ if (document.readyState === 'complete') {
 
     /* PSEUDOS */
 
-    applyPseudos: function(key, fn, element, source) {
+    applyPseudos: function(key, fn, target, source) {
       var listener = fn,
           pseudos = {};
       if (key.match(':')) {
@@ -2723,15 +2220,16 @@ if (document.readyState === 'complete') {
                     name: name,
                     value: value,
                     source: source,
+                    'arguments': pseudo['arguments'],
                     listener: last
                   };
               var output = pseudo.action.apply(this, [obj].concat(args));
               if (output === null || output === false) return output;
               return obj.listener.apply(this, args);
             };
-            if (element && pseudo.onAdd) {
-              if (element.getAttribute) pseudo.onAdd.call(element, pseudo);
-              else element.push(pseudo);
+            if (target && pseudo.onAdd) {
+              if (target.nodeName) pseudo.onAdd.call(target, pseudo);
+              else target.push(pseudo);
             }
           });
         }
@@ -2742,9 +2240,9 @@ if (document.readyState === 'complete') {
       return listener;
     },
 
-    removePseudos: function(element, event){
-      event._pseudos.forEach(function(obj){
-        if (obj.onRemove) obj.onRemove.call(element, obj);
+    removePseudos: function(target, pseudos){
+      pseudos.forEach(function(obj){
+        if (obj.onRemove) obj.onRemove.call(target, obj);
       });
     },
 
@@ -2787,7 +2285,12 @@ if (document.readyState === 'complete') {
         var args = toArray(arguments),
             output = event.condition.apply(this, args.concat([event]));
         if (!output) return output;
-        if (e.type != key) xtag.fireEvent(e.target, key, { baseEvent: e, detail: { __stack__: stack } });
+        if (e.type != key) {
+          xtag.fireEvent(e.target, key, {
+            baseEvent: e,
+            detail: output !== true && (output.__stack__ = stack) ? output : { __stack__: stack }
+          });
+        }
         else return event.stack.apply(this, args);
       };
       event.attach.forEach(function(name) {
@@ -2797,7 +2300,10 @@ if (document.readyState === 'complete') {
         custom.observer = function(e){
           var output = event.condition.apply(this, toArray(arguments).concat([custom]));
           if (!output) return output;
-          xtag.fireEvent(e.target, key, { baseEvent: e });
+          xtag.fireEvent(e.target, key, {
+            baseEvent: e,
+            detail: output !== true ? output : {}
+          });
         };
         for (var z in custom.observe) xtag.addEvent(custom.observe[z] || document, z, custom.observer, true);
         custom.__observing__ = true;
@@ -2829,7 +2335,7 @@ if (document.readyState === 'complete') {
     removeEvent: function (element, type, event) {
       event = event || type;
       event.onRemove.call(element, event, event.listener);
-      xtag.removePseudos(element, event);
+      xtag.removePseudos(element, event._pseudos);
       event._attach.forEach(function(obj) {
         xtag.removeEvent(element, obj);
       });
@@ -2843,7 +2349,7 @@ if (document.readyState === 'complete') {
     fireEvent: function(element, type, options, warn){
       var event = doc.createEvent('CustomEvent');
       options = options || {};
-      if (warn) console.warn('fireEvent has been modified, more info here: ');
+      if (warn) console.warn('fireEvent has been modified');
       event.initCustomEvent(type,
         options.bubbles !== false,
         options.cancelable !== false,
@@ -2852,7 +2358,7 @@ if (document.readyState === 'complete') {
       if (options.baseEvent) inheritEvent(event, options.baseEvent);
       try { element.dispatchEvent(event); }
       catch (e) {
-        console.warn('This error may have been caused by a change in the fireEvent method, more info here: ', e);
+        console.warn('This error may have been caused by a change in the fireEvent method', e);
       }
     },
 
@@ -2896,17 +2402,23 @@ if (document.readyState === 'complete') {
 
 /*** Universal Touch ***/
 
-var touchCount = 0, touchTarget = null;
+var touching = false,
+    touchTarget = null;
 
 doc.addEventListener('mousedown', function(e){
-  touchCount++;
+  touching = true;
   touchTarget = e.target;
 }, true);
 
 doc.addEventListener('mouseup', function(){
-  touchCount--;
+  touching = false;
   touchTarget = null;
-}, false);
+}, true);
+
+doc.addEventListener('dragend', function(){
+  touching = false;
+  touchTarget = null;
+}, true);
 
 var UIEventProto = {
   touches: {
@@ -2914,22 +2426,22 @@ var UIEventProto = {
     get: function(){
       return this.__touches__ ||
         (this.identifier = 0) ||
-        (this.__touches__ = touchCount ? [this] : []);
+        (this.__touches__ = touching ? [this] : []);
     }
   },
   targetTouches: {
     configurable: true,
     get: function(){
       return this.__targetTouches__ || (this.__targetTouches__ =
-        (touchCount && this.currentTarget &&
+        (touching && this.currentTarget &&
         (this.currentTarget == touchTarget ||
-        (this.currentTarget.contains && this.currentTarget.contains(touchTarget)))) ? [this] : []);
+        (this.currentTarget.contains && this.currentTarget.contains(touchTarget)))) ? (this.identifier = 0) || [this] : []);
     }
   },
   changedTouches: {
     configurable: true,
     get: function(){
-      return this.touches;
+      return this.__changedTouches__ || (this.identifier = 0) || (this.__changedTouches__ = [this]);
     }
   }
 };
@@ -2939,24 +2451,6 @@ for (z in UIEventProto){
   Object.defineProperty(UIEvent.prototype, z, UIEventProto[z]);
 }
 
-var touchReset = {
-    value: null,
-    writable: true,
-    configurable: true
-  },
-  TouchEventProto = {
-    touches: touchReset,
-    targetTouches: touchReset,
-    changedTouches: touchReset
-  };
-
-if (win.TouchEvent) {
-  for (z in TouchEventProto) {
-    var desc = Object.getOwnPropertyDescriptor(win.TouchEvent.prototype, z);
-    if (desc) win.TouchEvent.prototype[z] = TouchEventProto[z];
-    else Object.defineProperty(win.TouchEvent.prototype, z, TouchEventProto[z]);
-  }
-}
 
 /*** Custom Event Definitions ***/
 
@@ -2992,12 +2486,13 @@ if (win.TouchEvent) {
   }
 
   function checkTapPosition(el, tap, e){
-    var touch = e.changedTouches[0];
+    var touch = e.changedTouches[0],
+        tol = tap.gesture.tolerance;
     if (
-      touch.pageX < el.__tap__.x + tap.gesture.tolerance &&
-      touch.pageX > el.__tap__.x - tap.gesture.tolerance &&
-      touch.pageY < el.__tap__.y + tap.gesture.tolerance &&
-      touch.pageY > el.__tap__.y - tap.gesture.tolerance
+      touch.pageX < el.__tap__.x + tol &&
+      touch.pageX > el.__tap__.x - tol &&
+      touch.pageY < el.__tap__.y + tol &&
+      touch.pageY > el.__tap__.y - tol
     ) return true;
   }
 

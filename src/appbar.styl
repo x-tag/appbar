@@ -5,38 +5,28 @@ x-appbar {
   padding: 0;
   width: 100%;
   flexbox();
-  box-sizing(border-box);
-}
 
-x-appbar > * {
+  &, & * {
+    box-sizing(border-box);
+  }
 
-  display: flex;
+  & > * {
 
-  border: none;
-  padding: 2px 5px 0;
+    border: none;
+    vertical-align: middle;
+    text-align:center;
 
-  vertical-align: middle;
-  text-align:center;
+    -webkit-flex-align: center;
+    -ms-flex-align: center;
+    -webkit-align-items: center;
+    align-items: center;
+    text-align: center;
+  }
 
-  -webkit-flex-align: center;
-  -ms-flex-align: center;
-  -webkit-align-items: center;
-  align-items: center;
-  text-align: center;
-}
-
-x-appbar > *:first-child:before {
-  display: none;
-}
-
-x-appbar > h1, x-appbar > h2, x-appbar > h3, x-appbar > h4, x-appbar > h5, x-appbar > h6 {
-  flex(1);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin: 0;
-  line-height:100%;
-}
-
-x-appbar > h1:after, x-appbar > h2:after, x-appbar > h3:after, x-appbar > h4:after, x-appbar > h5:after, x-appbar > h6:after {
-  content: attr(subheading);
+  & > header {
+    flex(1);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0;
+  }
 }

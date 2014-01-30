@@ -3,9 +3,9 @@
   xtag.register('x-appbar', {
     lifecycle: {
       created: function(){
-        var header = xtag.queryChildren(this, 'h1,h2,h3,h4,h5,h6')[0];
-        if (!header){
-          header = document.createElement('h1');
+        var header = xtag.queryChildren(this, 'header')[0];
+        if (!header) {
+          header = document.createElement('header');
           this.appendChild(header);
         }
         this.xtag.data.header = header;
@@ -15,19 +15,19 @@
     accessors: {
       heading: {
         attribute: {},
-        get: function(){
+        get: function() {
           return this.xtag.data.header.innerHTML;
         },
-        set: function(value){
+        set: function(value) {
           this.xtag.data.header.innerHTML = value;
         }
       },
       subheading: {
         attribute: {},
-        get: function(){
+        get: function() {
           return this.getAttribute('subheading') || "";
         },
-        set: function(value){
+        set: function(value) {
           this.xtag.data.header.setAttribute('subheading', value);
         }
       }

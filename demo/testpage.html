@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8" />
-  <title>App Bar Demo - X-Tag</title>
+  <title>AppBar Demo - X-Tag</title>
 
   <link rel="stylesheet" type="text/css" href="x-tag-components.css"/>
   <link rel="stylesheet" type="text/css" href="../src/appbar.css"/>
@@ -14,11 +14,10 @@
   <style>
 
     .simple {
-      color: white;
+      color: #666;
       background-color: #ddd;
       background-image: none;
       font-size: 2.5rem;
-      color: rgb(255, 255, 255);
     }
 
     x-appbar.simple > *:before {
@@ -32,21 +31,30 @@
       background-color: orange;
     }
 
+    .ffos button {
+      background-color: orange;
+    }
+
+    .ffos button:hover {
+      background-color: rgb(255, 198, 0);
+    }
+
     x-appbar.ffos > *:before {
       top: 3px;
       bottom: 3px;
     }
     x-appbar.ffos {
-      box-shadow: 0 2px 0px 0 rgba(0,0,0,0.3);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
     }
+
     #mobile-device {
       height: 200px;
       width: 320px;
       border: solid 1px black;
-      background-color: #888;
+      background-color: #dedede;
     }
 
-    h2{
+    h2 {
       font-size: 24pt;
     }
 
@@ -55,31 +63,32 @@
 
 <body>
 
-<br />
+  <h1>AppBar demo</h1>
+
   <x-appbar>
-    <div>=</div>
+    <button>☰</button>
     <h2>Default Styles</h2>
-    <div>+</div>
-    <div>?</div>
+    <button>+</button>
+    <button>?</button>
   </x-appbar>
 
 <br />
 
   <x-appbar class="simple">
-    <x-action>=</x-action>
+    <button>☰</button>
     <h2>Simple Styles</h2>
-    <x-action>+</x-action>
-    <x-action>-</x-action>
-    <x-action>?</x-action>
+    <button>+</button>
+    <button>-</button>
+    <button>?</button>
   </x-appbar>
 
 <br />
 
   <div id="mobile-device">
     <x-appbar class="simple ffos" subheading="(2)">
-      <x-action>=</x-action>
+      <button>☰</button>
       <h2>Messages</h2>
-      <x-action>+</x-action>
+      <button>+</button>
     </x-appbar>
     <ul>
       <li>Message 1</li>

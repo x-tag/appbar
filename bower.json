@@ -12,7 +12,6 @@
     "src/appbar.styl"
   ],
   "dependencies": {
-    "x-tag-core": "*",
-    "brick-common": "*"
+    "x-tag-core": "*"
   }
 }

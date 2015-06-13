@@ -1,15 +1,14 @@
 {
   "name": "x-tag-appbar",
   "description": "",
-  "version": "0.2.12",
+  "version": "0.2.13",
   "keywords": [
     "web-components",
     "x-tag"
   ],
   "main": [
     "src/appbar.js",
-    "src/appbar.css",
-    "src/appbar.styl"
+    "src/appbar.css"
   ],
   "dependencies": {
     "x-tag-core": "*"

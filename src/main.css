@@ -15,11 +15,15 @@ x-appbar, x-appbar * {
 
 x-appbar > * {
   margin: 0;
-  padding: 0 0.75em;
+  padding: 0;
   border: none;
   background: none;
   vertical-align: middle;
   white-space: nowrap;
+}
+
+x-appbar > button, x-appbar > [x-appbar-padding] {
+  padding: 0 0.75em;
 }
 
 x-appbar > h1,x-appbar h2,x-appbar h3,x-appbar h4,x-appbar h5,x-appbar h6 {

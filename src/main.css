@@ -36,6 +36,7 @@ x-appbar > [x-appbar-flex] {
 
 x-appbar > a,
 x-appbar > button {
+  font-size: 1em;
   cursor: pointer;
 }
 

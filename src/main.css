@@ -35,6 +35,11 @@ x-appbar > [x-appbar-flex] {
 }
 
 x-appbar > a,
+x-appbar > button {
+  cursor: pointer;
+}
+
+x-appbar > a,
 x-appbar > button,
 x-appbar > [x-appbar-padding] {
   padding: 0 0.75em;
